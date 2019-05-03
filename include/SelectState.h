@@ -8,5 +8,7 @@ void table_state_handler(Command_t *cmd, size_t arg_idx);
 void offset_state_handler(Command_t *cmd, size_t arg_idx);
 void limit_state_handler(Command_t *cmd, size_t arg_idx);
 
+void where_state_handler(Command_t *cmd, size_t arg_idx);
+size_t parse_compare_statment(Command_t *cmd, size_t statment_idx, size_t arg_idx);
 
 #endif

@@ -1,5 +1,6 @@
 #include <string.h>
 #include <stdlib.h>
+#include <stdio.h> // for test
 #include "Command.h"
 #include "SelectState.h"
 
@@ -39,6 +40,9 @@ void table_state_handler(Command_t *cmd, size_t arg_idx) {
         arg_idx++;
         if (arg_idx == cmd->args_len) {
             return;
+        } else if (!strncmp(cmd->args[arg_idx], "where", 5)) {
+            where_state_handler(cmd, arg_idx+1);
+            return;
         } else if (!strncmp(cmd->args[arg_idx], "offset", 6)) {
             offset_state_handler(cmd, arg_idx+1);
             return;
@@ -49,6 +53,51 @@ void table_state_handler(Command_t *cmd, size_t arg_idx) {
     }
     cmd->type = UNRECOG_CMD;
     return;
+}
+
+void where_state_handler(Command_t *cmd, size_t arg_idx) {
+    if (arg_idx < cmd->args_len) {
+        
+		arg_idx = parse_compare_statment(cmd, 0, arg_idx);
+		int have_logic = 0;
+		if (arg_idx == cmd->args_len) {
+			return;
+		} else if ( !strncmp(cmd->args[arg_idx], "and", 3) ){
+			cmd->condition.logic = AND;
+			arg_idx += 1;
+			have_logic = 1;
+		} else if ( !strncmp(cmd->args[arg_idx], "or", 2) ){
+			cmd->condition.logic = OR;
+			arg_idx += 1;
+			have_logic = 1;
+		}
+		if ( have_logic ){
+			arg_idx = parse_compare_statment(cmd, 1, arg_idx);
+		}
+
+        if (arg_idx == cmd->args_len) {
+            return;
+        } else if (!strncmp(cmd->args[arg_idx], "offset", 6)) {
+            offset_state_handler(cmd, arg_idx+1);
+            return;
+        } else if (arg_idx < cmd->args_len
+                && !strncmp(cmd->args[arg_idx], "limit", 5)) {
+
+            limit_state_handler(cmd, arg_idx+1);
+            return;
+        }
+    }
+    cmd->type = UNRECOG_CMD;
+    return;
+}
+
+size_t parse_compare_statment(Command_t *cmd, size_t statment_idx, size_t arg_idx){
+	cmd->condition.cnt_statment += 1;
+	CompareStatment_t *stat = &(cmd->condition.s[statment_idx]);
+	stat->lhs = strdup(cmd->args[arg_idx++]);
+	stat->op = strdup(cmd->args[arg_idx++]);
+	stat->rhs = strdup(cmd->args[arg_idx++]);
+	return arg_idx;
 }
 
 void offset_state_handler(Command_t *cmd, size_t arg_idx) {

@@ -27,6 +27,24 @@ typedef struct SelectArgs {
     int limit;
 } SelectArgs_t;
 
+typedef enum {
+	NIL,
+	AND,
+	OR,
+} Logic_t;
+
+typedef struct CompareStatment{
+	char *lhs;
+	char *op;
+	char *rhs;
+} CompareStatment_t;
+
+typedef struct Condition {
+	CompareStatment_t s[2];
+    Logic_t logic;
+	int cnt_statment;
+} Condition_t;
+
 typedef union {
     SelectArgs_t sel_args;
 } CmdArg_t;
@@ -37,6 +55,7 @@ typedef struct Command {
     size_t args_len;
     size_t args_cap;
     CmdArg_t cmd_args;
+    Condition_t condition;
 } Command_t;
 
 Command_t* new_Command();

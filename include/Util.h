@@ -18,4 +18,7 @@ int handle_insert_cmd(Table_t *table, Command_t *cmd);
 int handle_select_cmd(Table_t *table, Command_t *cmd);
 void print_help_msg();
 
+int check_condition(User_t *user, Command_t *cmd);
+int check_compare_statment(User_t *user, CompareStatment_t *s);
+
 #endif

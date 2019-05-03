@@ -48,7 +48,7 @@ void print_user(User_t *user, SelectArgs_t *sel_args) {
             } else if (!strncmp(sel_args->fields[idx], "email", 5)) {
                 printf("%s", user->email);
             } else if (!strncmp(sel_args->fields[idx], "age", 3)) {
-                printf("%s", user->age);
+                printf("%d", user->age);
             }
         }
     }
@@ -177,9 +177,52 @@ int handle_insert_cmd(Table_t *table, Command_t *cmd) {
 int handle_select_cmd(Table_t *table, Command_t *cmd) {
     cmd->type = SELECT_CMD;
     field_state_handler(cmd, 1);
+	
+	int *idxList = NULL;
+	size_t idxListCap = 0;
+	size_t idxListLen = 0;
 
-    print_users(table, NULL, 0, cmd);
+	for (size_t idx = 0; idx < table->len; idx++) {
+		User_t *user = get_User(table, idx);
+
+		if (idxListLen == idxListCap) {
+		    int *new_idxList_buf = (int*)malloc(sizeof(int)*(table->len+EXT_LEN));
+		    memcpy(new_idxList_buf, idxList, sizeof(int)*idxListLen);
+
+		    free(idxList);
+		    idxList = new_idxList_buf;
+		    idxListCap += EXT_LEN;
+		}
+
+		if ( !check_condition(user, cmd) )continue;
+
+		idxList[ idxListLen++ ] = idx;
+    }
+    print_users(table, idxList, idxListLen, cmd);
+	free(idxList);
+
     return table->len;
+}
+
+int check_condition(User_t *user, Command_t *cmd){
+	int cnt_statment = cmd->condition.cnt_statment;
+
+	if (cnt_statment == 0){
+		return 1;
+	} else if (cnt_statment == 1) {
+		return check_compare_statment(user, &(cmd->condition.s[0]));
+	} else if (cnt_statment == 2) {
+		int lhs = check_compare_statment(user, &(cmd->condition.s[0]));
+		int rhs = check_compare_statment(user, &(cmd->condition.s[1]));
+		if (cmd->condition.logic == AND) return lhs && rhs;
+		else if (cmd->condition.logic == OR) return lhs || rhs;
+		else return 0;
+	}
+	return 0;
+}
+
+int check_compare_statment(User_t *user, CompareStatment_t *s){
+	return 1;
 }
 
 ///
@@ -191,7 +234,7 @@ void print_help_msg() {
     "## Built-in Commands\n"
     "\n"
     "  * .exit\n"
-    "\tThis cmd archives the table, if the db file is specified, then exit.\n"
+    "\tThis cmd archives the tarmble, if the db file is specified, then exit.\n"
     "\n"
     "  * .output\n"
     "\tThis cmd change the output strategy, default is stdout.\n"
