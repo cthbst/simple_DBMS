@@ -206,7 +206,7 @@ int handle_select_cmd(Table_t *table, Command_t *cmd) {
 
 int check_condition(User_t *user, Command_t *cmd){
 	int cnt_statment = cmd->condition.cnt_statment;
-
+	
 	if (cnt_statment == 0){
 		return 1;
 	} else if (cnt_statment == 1) {
@@ -222,8 +222,42 @@ int check_condition(User_t *user, Command_t *cmd){
 }
 
 int check_compare_statment(User_t *user, CompareStatment_t *s){
-	return 1;
+	if (!strncmp(s->lhs, "\"", 1) || !strncmp(s->lhs, "name", 4) || !strncmp(s->lhs, "email", 5)){
+		// string compare
+		char *lhs = get_string_variable(user, s->lhs);
+		char *rhs = get_string_variable(user, s->rhs);
+		int is_same = (strcmp(lhs, rhs)==0);
+		if ( !strncmp(s->op,"=",1) ) return is_same;
+		else return !is_same;		
+	} else {
+		// numeric comparision
+		int lhs = get_numeric_variable(user, s->lhs);
+		int rhs = get_numeric_variable(user, s->rhs);
+		if ( !strncmp(s->op,"=",1) ) return lhs == rhs;
+		else if ( !strncmp(s->op,"!=",2) ) return lhs != rhs;
+		else if ( !strncmp(s->op,">=",2) ) return lhs >= rhs;
+		else if ( !strncmp(s->op,"<=",2) ) return lhs <= rhs;
+		else if ( !strncmp(s->op,">",1) ) return lhs > rhs;
+		else if ( !strncmp(s->op,"<",1) ) return lhs < rhs;
+		else return 0;
+	}
 }
+
+char* get_string_variable(User_t *user, char* s){
+	if (s[0]=='\"') return s;
+	else if (s[0]=='n') return user->name;
+	else if (s[0]=='e') return user->email;
+	else return NULL;
+}
+
+int get_numeric_variable(User_t *user, char* s){
+	if (!strncmp(s,"age",3)) return (int)user->age;
+	else if (!strncmp(s,"id",2)) return (int)user->id;
+	else {
+		return atoi(s);
+	}
+}
+
 
 ///
 /// Show the help messages

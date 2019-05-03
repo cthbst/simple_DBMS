@@ -20,5 +20,7 @@ void print_help_msg();
 
 int check_condition(User_t *user, Command_t *cmd);
 int check_compare_statment(User_t *user, CompareStatment_t *s);
+char* get_string_variable(User_t *user, char* s);
+int get_numeric_variable(User_t *user, char* s);
 
 #endif
