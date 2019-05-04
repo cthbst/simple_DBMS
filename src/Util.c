@@ -147,9 +147,31 @@ int handle_query_cmd(Table_t *table, Command_t *cmd) {
     } else if (!strncmp(cmd->args[0], "select", 6)) {
         handle_select_cmd(table, cmd);
         return SELECT_CMD;
+    } else if (!strncmp(cmd->args[0], "delete", 6)) {
+		handle_delete_cmd(table, cmd);
+        return DELETE_CMD;
     } else {
         return UNRECOG_CMD;
     }
+}
+
+void handle_delete_cmd(Table_t *table, Command_t *cmd) {
+	table_state_handler(cmd, 2);
+	
+	int *idxList = NULL;
+	int idxListLen = select_valid_user(table, cmd, &idxList);
+
+	int len = 0 ;	
+	for (size_t i=0, j=0; i<table->len; i++){
+		if (j<idxListLen && i==idxList[j]){
+			j++;
+			continue;
+		}
+		table->users[len] = table->users[i];
+		len++;
+	}
+	table->len = len;
+	free(idxList);
 }
 
 ///
