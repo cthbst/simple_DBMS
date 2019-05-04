@@ -25,5 +25,6 @@ int get_numeric_variable(User_t *user, char* s);
 int select_valid_user(Table_t *table, Command_t *cmd, int **idxList);
 void print_aggregate(Table_t *table, int *idxList, size_t idxListLen, Command_t *cmd);
 void handle_delete_cmd(Table_t *table, Command_t *cmd);
+void handle_update_cmd(Table_t *table, Command_t *cmd);
 
 #endif

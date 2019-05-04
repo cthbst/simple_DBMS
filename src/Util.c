@@ -150,10 +150,35 @@ int handle_query_cmd(Table_t *table, Command_t *cmd) {
     } else if (!strncmp(cmd->args[0], "delete", 6)) {
 		handle_delete_cmd(table, cmd);
         return DELETE_CMD;
+    } else if (!strncmp(cmd->args[0], "update", 6)) {
+		handle_update_cmd(table, cmd);
+        return UPDATE_CMD;
     } else {
         return UNRECOG_CMD;
     }
 }
+
+void handle_update_cmd(Table_t *table, Command_t *cmd) {
+	int arg_idx = 3;
+	arg_idx = parse_compare_statment(cmd, 2, arg_idx);
+	cmd->condition.cnt_statment--;
+	if (arg_idx < cmd->args_len) where_state_handler(cmd, arg_idx+1);
+
+	char *field = cmd->condition.s[2].lhs;
+	char *value = cmd->condition.s[2].rhs;
+
+	int *idxList = NULL;
+	int idxListLen = select_valid_user(table, cmd, &idxList);
+	
+	for (size_t i=0; i<idxListLen; i++){
+		User_t *user = get_User(table, idxList[i]);
+		if (!strncmp(field,"id",2)) user->id = atoi(value);
+		else if (!strncmp(field,"name",4)) strcpy(user->name, value);
+		else if (!strncmp(field,"email",5)) strcpy(user->email, value);
+		else if (!strncmp(field,"age",3)) user->age = atoi(value);
+	}
+}
+
 
 void handle_delete_cmd(Table_t *table, Command_t *cmd) {
 	table_state_handler(cmd, 2);

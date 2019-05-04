@@ -11,6 +11,7 @@ enum {
     INSERT_CMD = 100,
     SELECT_CMD,
 	DELETE_CMD,
+	UPDATE_CMD,
 };
 
 typedef struct {
@@ -41,7 +42,7 @@ typedef struct CompareStatment{
 } CompareStatment_t;
 
 typedef struct Condition {
-	CompareStatment_t s[2];
+	CompareStatment_t s[3];
     Logic_t logic;
 	int cnt_statment;
 } Condition_t;
