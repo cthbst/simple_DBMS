@@ -20,6 +20,12 @@ void field_state_handler(Command_t *cmd, size_t arg_idx) {
             add_select_field(cmd, cmd->args[arg_idx]);
         } else if (!strncmp(cmd->args[arg_idx], "age", 3)) {
             add_select_field(cmd, cmd->args[arg_idx]);
+        } else if (!strncmp(cmd->args[arg_idx], "count", 5)) {
+            add_select_field(cmd, cmd->args[arg_idx]);
+        } else if (!strncmp(cmd->args[arg_idx], "sum", 3)) {
+            add_select_field(cmd, cmd->args[arg_idx]);
+        } else if (!strncmp(cmd->args[arg_idx], "avg", 3)) {
+            add_select_field(cmd, cmd->args[arg_idx]);
         } else if (!strncmp(cmd->args[arg_idx], "from", 4)) {
             table_state_handler(cmd, arg_idx+1);
             return;

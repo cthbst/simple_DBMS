@@ -179,29 +179,84 @@ int handle_select_cmd(Table_t *table, Command_t *cmd) {
     field_state_handler(cmd, 1);
 	
 	int *idxList = NULL;
-	size_t idxListCap = 0;
-	size_t idxListLen = 0;
+	size_t idxListLen = select_valid_user(table, cmd, &idxList);
+	
+	int fields_len = cmd->cmd_args.sel_args.fields_len;
+	char **fields = cmd->cmd_args.sel_args.fields;
+	if (fields_len > 0 && 
+			( 	!strncmp(fields[0],"sum",3) || 
+				!strncmp(fields[0],"avg",3) ||
+				!strncmp(fields[0],"count",5) )){
+		print_aggregate(table, idxList, idxListLen, cmd);
+	} else {
+		print_users(table, idxList, idxListLen, cmd);
+	}
+	free(idxList);
 
+    return table->len;
+}
+
+void print_aggregate(Table_t *table, int *idxList, size_t idxListLen, Command_t *cmd) {
+	int cnt = 0;
+	int id_sum = 0;
+	int age_sum = 0;
+	
+    if (idxList) {
+        for (int idx = 0; idx < idxListLen; idx++) {
+			User_t *user = get_User(table, idxList[idx]);
+            cnt += 1;
+			id_sum += user->id;
+			age_sum += user->age;
+        }
+    } else {
+        for (int idx = 0; idx < table->len; idx++) {
+			User_t *user = get_User(table, idx);
+            cnt += 1;
+			id_sum += user->id;
+			age_sum += user->age;
+        }
+    }
+	
+	int fields_len = cmd->cmd_args.sel_args.fields_len;
+	char **fields = cmd->cmd_args.sel_args.fields;
+	for (int i = 0; i < fields_len; i++) {	
+		if ( !strncmp(fields[i], "count",5) ){
+			printf("(%d)", cnt);
+		} else if ( !strncmp(fields[i], "sum(age)",8) ){
+			printf("(%d)", age_sum);
+		} else if ( !strncmp(fields[i], "avg(age)",8) ){
+			printf("(%.3f)", (double)age_sum/cnt);
+		} else if ( !strncmp(fields[i], "sum(id)",8) ){
+			printf("(%d)", id_sum);
+		} else if ( !strncmp(fields[i], "avg(id)",8) ){
+			printf("(%.3f)", (double)id_sum/cnt);
+		} 
+	}
+	printf("\n");
+}
+
+
+int select_valid_user(Table_t *table, Command_t *cmd, int **idxList){
+	int idxListLen = 0;
+	int idxListCap = 0;
+	*idxList = NULL;
 	for (size_t idx = 0; idx < table->len; idx++) {
 		User_t *user = get_User(table, idx);
 
 		if (idxListLen == idxListCap) {
 		    int *new_idxList_buf = (int*)malloc(sizeof(int)*(table->len+EXT_LEN));
-		    memcpy(new_idxList_buf, idxList, sizeof(int)*idxListLen);
+		    memcpy(new_idxList_buf, *idxList, sizeof(int)*idxListLen);
 
-		    free(idxList);
-		    idxList = new_idxList_buf;
+		    free(*idxList);
+		    *idxList = new_idxList_buf;
 		    idxListCap += EXT_LEN;
 		}
 
 		if ( !check_condition(user, cmd) )continue;
 
-		idxList[ idxListLen++ ] = idx;
+		(*idxList)[ idxListLen++ ] = idx;
     }
-    print_users(table, idxList, idxListLen, cmd);
-	free(idxList);
-
-    return table->len;
+	return idxListLen;
 }
 
 int check_condition(User_t *user, Command_t *cmd){
