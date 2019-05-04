@@ -191,6 +191,7 @@ int handle_select_cmd(Table_t *table, Command_t *cmd) {
 	} else {
 		print_users(table, idxList, idxListLen, cmd);
 	}
+
 	free(idxList);
 
     return table->len;
