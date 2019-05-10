@@ -267,20 +267,27 @@ void print_aggregate(Table_t *table, int *idxList, size_t idxListLen, Command_t 
 	
 	int fields_len = cmd->cmd_args.sel_args.fields_len;
 	char **fields = cmd->cmd_args.sel_args.fields;
+    printf("(");
+    int num_aggregate = 0;
 	for (int i = 0; i < fields_len; i++) {	
 		if ( !strncmp(fields[i], "count",5) ){
-			printf("(%d)", cnt);
+            if (num_aggregate++) printf(",");
+			printf("%d", cnt);
 		} else if ( !strncmp(fields[i], "sum(age)",8) ){
-			printf("(%d)", age_sum);
+            if (num_aggregate++) printf(",");
+			printf("%d", age_sum);
 		} else if ( !strncmp(fields[i], "avg(age)",8) ){
-			printf("(%.3f)", (double)age_sum/cnt);
+            if (num_aggregate++) printf(",");
+			printf("%.3f", (double)age_sum/cnt);
 		} else if ( !strncmp(fields[i], "sum(id)",8) ){
-			printf("(%d)", id_sum);
+            if (num_aggregate++) printf(",");
+			printf("%d", id_sum);
 		} else if ( !strncmp(fields[i], "avg(id)",8) ){
-			printf("(%.3f)", (double)id_sum/cnt);
-		} 
+            if (num_aggregate++) printf(",");
+			printf("%.3f", (double)id_sum/cnt);
+		}
 	}
-	printf("\n");
+	printf(")\n");
 }
 
 
