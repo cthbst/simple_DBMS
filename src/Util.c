@@ -169,6 +169,17 @@ void handle_update_cmd(Table_t *table, Command_t *cmd) {
 
 	int *idxList = NULL;
 	int idxListLen = select_valid_user(table, cmd, &idxList);
+    
+    if (!strncmp(field,"id",2)){
+        if ( idxListLen > 1 ) return;
+        int targetId = atoi(value);
+        for (int idx = 0; idx < table->len; idx++) {
+            User_t* usr_ptr = get_User(table, idx);
+            if (usr_ptr->id == targetId) {
+                return;
+            }
+        }
+    }
 	
 	for (size_t i=0; i<idxListLen; i++){
 		User_t *user = get_User(table, idxList[i]);
