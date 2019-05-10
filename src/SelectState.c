@@ -64,22 +64,22 @@ void table_state_handler(Command_t *cmd, size_t arg_idx) {
 void where_state_handler(Command_t *cmd, size_t arg_idx) {
     if (arg_idx < cmd->args_len) {
         
-		arg_idx = parse_compare_statment(cmd, 0, arg_idx);
-		int have_logic = 0;
-		if (arg_idx == cmd->args_len) {
-			return;
-		} else if ( !strncmp(cmd->args[arg_idx], "and", 3) ){
-			cmd->condition.logic = AND;
-			arg_idx += 1;
-			have_logic = 1;
-		} else if ( !strncmp(cmd->args[arg_idx], "or", 2) ){
-			cmd->condition.logic = OR;
-			arg_idx += 1;
-			have_logic = 1;
-		}
-		if ( have_logic ){
-			arg_idx = parse_compare_statment(cmd, 1, arg_idx);
-		}
+        arg_idx = parse_compare_statment(cmd, 0, arg_idx);
+        int have_logic = 0;
+        if (arg_idx == cmd->args_len) {
+            return;
+        } else if ( !strncmp(cmd->args[arg_idx], "and", 3) ){
+            cmd->condition.logic = AND;
+            arg_idx += 1;
+            have_logic = 1;
+        } else if ( !strncmp(cmd->args[arg_idx], "or", 2) ){
+            cmd->condition.logic = OR;
+            arg_idx += 1;
+            have_logic = 1;
+        }
+        if ( have_logic ){
+            arg_idx = parse_compare_statment(cmd, 1, arg_idx);
+        }
 
         if (arg_idx == cmd->args_len) {
             return;
@@ -98,37 +98,37 @@ void where_state_handler(Command_t *cmd, size_t arg_idx) {
 }
 
 size_t parse_compare_statment(Command_t *cmd, size_t statment_idx, size_t arg_idx){
-	cmd->condition.cnt_statment += 1;
-	CompareStatment_t *stat = &(cmd->condition.s[statment_idx]);
+    cmd->condition.cnt_statment += 1;
+    CompareStatment_t *stat = &(cmd->condition.s[statment_idx]);
 
-	char *str = NULL;
-	/* stat->lhs */ {
-		if (str==NULL) str = cmd->args[arg_idx++];
-		char *p = strpbrk(str, "!=<>");
-		if (p==NULL){
-			stat->lhs = strdup(str);
-			str = NULL;
-		} else {
-			stat->lhs = strndup(str, p-str);
-			str = p;
-		}
-	}
-	/* stat->op */ {
-		if (str==NULL) str = cmd->args[arg_idx++];
-		int len = strspn (str,"!=<>");
-		if (str[len]=='\0'){
-			stat->op = strdup(str);
-			str = NULL;
-		} else {
-			stat->op = strndup(str, len);
-			str += len;
-		}
-	}
-	/* stat->rhs */ {
-		if (str==NULL) str = cmd->args[arg_idx++];
-		stat->rhs = strdup(str);
-	}
-	return arg_idx;
+    char *str = NULL;
+    /* stat->lhs */ {
+        if (str==NULL) str = cmd->args[arg_idx++];
+        char *p = strpbrk(str, "!=<>");
+        if (p==NULL){
+            stat->lhs = strdup(str);
+            str = NULL;
+        } else {
+            stat->lhs = strndup(str, p-str);
+            str = p;
+        }
+    }
+    /* stat->op */ {
+        if (str==NULL) str = cmd->args[arg_idx++];
+        int len = strspn (str,"!=<>");
+        if (str[len]=='\0'){
+            stat->op = strdup(str);
+            str = NULL;
+        } else {
+            stat->op = strndup(str, len);
+            str += len;
+        }
+    }
+    /* stat->rhs */ {
+        if (str==NULL) str = cmd->args[arg_idx++];
+        stat->rhs = strdup(str);
+    }
+    return arg_idx;
 }
 
 void offset_state_handler(Command_t *cmd, size_t arg_idx) {
