@@ -256,6 +256,9 @@ int handle_select_cmd(Table_t *table, Command_t *cmd) {
 }
 
 void print_aggregate(Table_t *table, int *idxList, size_t idxListLen, Command_t *cmd) {
+    if ( cmd->cmd_args.sel_args.limit == 0 ) return;
+    if ( cmd->cmd_args.sel_args.offset > 1 ) return;
+
     int cnt = 0;
     int id_sum = 0;
     int age_sum = 0;
