@@ -3,34 +3,15 @@
 #include "User.h"
 #include "Command.h"
 
-///
-/// Allocate new space for User_t
-/// The caller should free the allocated space
-///
-User_t* new_User() {
-    User_t *new_user = (User_t*)malloc(sizeof(User_t));
-    new_user->id = 0;
-    memset(new_user->name, 0, MAX_USER_NAME+1);
-    memset(new_user->email, 0, MAX_USER_EMAIL+1);
-    new_user->age = 0;
-    return new_user;
+User_t::User_t(){
 }
 
-///
-/// Transform from the input cmd to the User_t
-///
-User_t* command_to_User(Command_t *cmd) {
-    User_t *user = new_User();
-    if (!user || !cmd) {
-        return NULL;
-    }
-    if (cmd->args_len != 5) {
-        return NULL;
-    }
-    user->id = atoi(cmd->args[1]);
-    strncpy(user->name, cmd->args[2], MAX_USER_NAME);
-    strncpy(user->email, cmd->args[3], MAX_USER_EMAIL);
-    user->age = atoi(cmd->args[4]);
+User_t command_to_User(Command_t *cmd) {
+    User_t user;
+    user.id = atoi(cmd->args[1]);
+    user.name = std::string(cmd->args[2]);
+    user.email = std::string(cmd->args[3]);
+    user.age = atoi(cmd->args[4]);
     return user;
 }
 

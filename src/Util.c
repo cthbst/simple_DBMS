@@ -32,23 +32,23 @@ void print_prompt(State_t *state) {
 ///
 /// Print the user in the specific format
 ///
-void print_user(User_t *user, SelectArgs_t *sel_args) {
+void print_user(const User_t &user, SelectArgs_t *sel_args) {
     size_t idx;
     printf("(");
     for (idx = 0; idx < sel_args->fields_len; idx++) {
         if (!strncmp(sel_args->fields[idx], "*", 1)) {
-            printf("%d, %s, %s, %d", user->id, user->name, user->email, user->age);
+            printf("%d, %s, %s, %d", user.id, user.name.c_str(), user.email.c_str(), user.age);
         } else {
             if (idx > 0) printf(", ");
 
             if (!strncmp(sel_args->fields[idx], "id", 2)) {
-                printf("%d", user->id);
+                printf("%d", user.id);
             } else if (!strncmp(sel_args->fields[idx], "name", 4)) {
-                printf("%s", user->name);
+                printf("%s", user.name.c_str());
             } else if (!strncmp(sel_args->fields[idx], "email", 5)) {
-                printf("%s", user->email);
+                printf("%s", user.email.c_str());
             } else if (!strncmp(sel_args->fields[idx], "age", 3)) {
-                printf("%d", user->age);
+                printf("%d", user.age);
             }
         }
     }
@@ -58,8 +58,7 @@ void print_user(User_t *user, SelectArgs_t *sel_args) {
 ///
 /// Print the users for given offset and limit restriction
 ///
-void print_users(Table_t *table, int *idxList, size_t idxListLen, Command_t *cmd) {
-    int idx;
+void print_users(Table_t &table, const std::vector<size_t>& idxList, Command_t *cmd) {
     int limit = cmd->cmd_args.sel_args.limit;
     int offset = cmd->cmd_args.sel_args.offset;
 
@@ -67,20 +66,11 @@ void print_users(Table_t *table, int *idxList, size_t idxListLen, Command_t *cmd
         offset = 0;
     }
 
-    if (idxList) {
-        for (idx = offset; idx < (int)idxListLen; idx++) {
-            if (limit != -1 && (idx - offset) >= limit) {
-                break;
-            }
-            print_user(get_User(table, idxList[idx]), &(cmd->cmd_args.sel_args));
+    for (int idx = offset; idx < (int)idxList.size(); idx++) {
+        if (limit != -1 && (idx - offset) >= limit) {
+            break;
         }
-    } else {
-        for (idx = offset; idx < (int)table->len; idx++) {
-            if (limit != -1 && (idx - offset) >= limit) {
-                break;
-            }
-            print_user(get_User(table, idx), &(cmd->cmd_args.sel_args));
-        }
+        print_user(table.users[ idxList[idx] ], &(cmd->cmd_args.sel_args));
     }
 }
 
@@ -108,9 +98,8 @@ int parse_input(char *input, Command_t *cmd) {
 /// Handle built-in commands
 /// Return: command type
 ///
-void handle_builtin_cmd(Table_t *table, Command_t *cmd, State_t *state) {
+void handle_builtin_cmd(Table_t &table, Command_t *cmd, State_t *state) {
     if (!strncmp(cmd->args[0], ".exit", 5)) {
-        archive_table(table);
         exit(0);
     } else if (!strncmp(cmd->args[0], ".output", 7)) {
         if (cmd->args_len == 2) {
@@ -127,10 +116,6 @@ void handle_builtin_cmd(Table_t *table, Command_t *cmd, State_t *state) {
                 __fpurge(stdout); //This is used to clear the stdout buffer
             }
         }
-    } else if (!strncmp(cmd->args[0], ".load", 5)) {
-        if (cmd->args_len == 2) {
-            load_table(table, cmd->args[1]);
-        }
     } else if (!strncmp(cmd->args[0], ".help", 5)) {
         print_help_msg();
     }
@@ -140,7 +125,7 @@ void handle_builtin_cmd(Table_t *table, Command_t *cmd, State_t *state) {
 /// Handle query type commands
 /// Return: command type
 ///
-int handle_query_cmd(Table_t *table, Command_t *cmd) {
+int handle_query_cmd(Table_t &table, Command_t *cmd) {
     if (!strncmp(cmd->args[0], "insert", 6)) {
         handle_insert_cmd(table, cmd);
         return INSERT_CMD;
@@ -158,7 +143,7 @@ int handle_query_cmd(Table_t *table, Command_t *cmd) {
     }
 }
 
-void handle_update_cmd(Table_t *table, Command_t *cmd) {
+void handle_update_cmd(Table_t &table, Command_t *cmd) {
     int arg_idx = 3;
     arg_idx = parse_compare_statment(cmd, 2, arg_idx);
     cmd->condition.cnt_statment--;
@@ -167,47 +152,44 @@ void handle_update_cmd(Table_t *table, Command_t *cmd) {
     char *field = cmd->condition.s[2].lhs;
     char *value = cmd->condition.s[2].rhs;
 
-    int *idxList = NULL;
-    int idxListLen = select_valid_user(table, cmd, &idxList);
+    std::vector<size_t> idxList = select_valid_user(table, cmd);
     
     if (!strncmp(field,"id",2)){
-        if ( idxListLen > 1 ) return;
+        if ( idxList.size() > 1 ) return;
         int targetId = atoi(value);
-        for (int idx = 0; idx < (int)table->len; idx++) {
-            User_t* usr_ptr = get_User(table, idx);
-            if ((int)usr_ptr->id == targetId) {
-                return;
-            }
-        }
+        if ( table.primary_keys.count(targetId) ) return;
     }
     
-    for (size_t i=0; (int)i<idxListLen; i++){
-        User_t *user = get_User(table, idxList[i]);
-        if (!strncmp(field,"id",2)) user->id = atoi(value);
-        else if (!strncmp(field,"name",4)) strcpy(user->name, value);
-        else if (!strncmp(field,"email",5)) strcpy(user->email, value);
-        else if (!strncmp(field,"age",3)) user->age = atoi(value);
+    for (size_t idx:idxList){
+        User_t &user = table.users[idx];
+        if (!strncmp(field,"id",2)){
+            table.primary_keys.erase(user.id);
+            user.id = atoi(value);
+            table.primary_keys.insert(user.id);
+        }
+        else if (!strncmp(field,"name",4)) user.name = std::string(value);
+        else if (!strncmp(field,"email",5)) user.email = std::string(value);
+        else if (!strncmp(field,"age",3)) user.age = atoi(value);
     }
 }
 
 
-void handle_delete_cmd(Table_t *table, Command_t *cmd) {
+void handle_delete_cmd(Table_t &table, Command_t *cmd) {
     table_state_handler(cmd, 2);
     
-    int *idxList = NULL;
-    int idxListLen = select_valid_user(table, cmd, &idxList);
-
-    int len = 0 ;    
-    for (size_t i=0, j=0; i<table->len; i++){
-        if ((int)j<idxListLen && (int)i==idxList[j]){
+    std::vector<size_t> idxList = select_valid_user(table, cmd);
+    
+    size_t len = 0 ;    
+    for (size_t i=0, j=0; i<table.size(); i++){
+        if (j<idxList.size() && i==idxList[j]){
+            table.primary_keys.erase( table.users[i].id );
             j++;
             continue;
         }
-        table->users[len] = table->users[i];
+        table.users[len] = table.users[i];
         len++;
     }
-    table->len = len;
-    free(idxList);
+    table.users.resize(len);
 }
 
 ///
@@ -215,16 +197,13 @@ void handle_delete_cmd(Table_t *table, Command_t *cmd) {
 /// If the insert operation success, then change the input arg
 /// `cmd->type` to INSERT_CMD
 ///
-int handle_insert_cmd(Table_t *table, Command_t *cmd) {
-    int ret = 0;
-    User_t *user = command_to_User(cmd);
-    if (user) {
-        ret = add_User(table, user);
-        if (ret > 0) {
-            cmd->type = INSERT_CMD;
-        }
+int handle_insert_cmd(Table_t &table, Command_t *cmd) {
+    User_t user = command_to_User(cmd);
+    if ( table.add_User(user) ) {
+        cmd->type = INSERT_CMD;
+        return 1;
     }
-    return ret;
+    return 0;
 }
 
 ///
@@ -232,12 +211,11 @@ int handle_insert_cmd(Table_t *table, Command_t *cmd) {
 /// If the select operation success, then change the input arg
 /// `cmd->type` to SELECT_CMD
 ///
-int handle_select_cmd(Table_t *table, Command_t *cmd) {
+int handle_select_cmd(Table_t &table, Command_t *cmd) {
     cmd->type = SELECT_CMD;
     field_state_handler(cmd, 1);
     
-    int *idxList = NULL;
-    size_t idxListLen = select_valid_user(table, cmd, &idxList);
+    std::vector<size_t> idxList = select_valid_user(table, cmd);
     
     int fields_len = cmd->cmd_args.sel_args.fields_len;
     char **fields = cmd->cmd_args.sel_args.fields;
@@ -245,17 +223,14 @@ int handle_select_cmd(Table_t *table, Command_t *cmd) {
             (     !strncmp(fields[0],"sum",3) || 
                 !strncmp(fields[0],"avg",3) ||
                 !strncmp(fields[0],"count",5) )){
-        print_aggregate(table, idxList, idxListLen, cmd);
+        print_aggregate(table, idxList, cmd);
     } else {
-        print_users(table, idxList, idxListLen, cmd);
+        print_users(table, idxList, cmd);
     }
-
-    free(idxList);
-
-    return table->len;
+    return table.size();
 }
 
-void print_aggregate(Table_t *table, int *idxList, size_t idxListLen, Command_t *cmd) {
+void print_aggregate(Table_t &table, const std::vector<size_t>& idxList, Command_t *cmd) {
     if ( cmd->cmd_args.sel_args.limit == 0 ) return;
     if ( cmd->cmd_args.sel_args.offset > 1 ) return;
 
@@ -263,20 +238,11 @@ void print_aggregate(Table_t *table, int *idxList, size_t idxListLen, Command_t 
     int id_sum = 0;
     int age_sum = 0;
     
-    if (idxList) {
-        for (int idx = 0; idx < (int)idxListLen; idx++) {
-            User_t *user = get_User(table, idxList[idx]);
-            cnt += 1;
-            id_sum += user->id;
-            age_sum += user->age;
-        }
-    } else {
-        for (int idx = 0; idx < (int)table->len; idx++) {
-            User_t *user = get_User(table, idx);
-            cnt += 1;
-            id_sum += user->id;
-            age_sum += user->age;
-        }
+    for (int idx = 0; idx < (int)idxList.size(); idx++) {
+        const User_t &user = table.users[ idxList[idx] ];
+        cnt += 1;
+        id_sum += user.id;
+        age_sum += user.age;
     }
     
     int fields_len = cmd->cmd_args.sel_args.fields_len;
@@ -305,30 +271,18 @@ void print_aggregate(Table_t *table, int *idxList, size_t idxListLen, Command_t 
 }
 
 
-int select_valid_user(Table_t *table, Command_t *cmd, int **idxList){
-    int idxListLen = 0;
-    int idxListCap = 0;
-    *idxList = NULL;
-    for (size_t idx = 0; idx < table->len; idx++) {
-        User_t *user = get_User(table, idx);
-
-        if (idxListLen == idxListCap) {
-            int *new_idxList_buf = (int*)malloc(sizeof(int)*(table->len+EXT_LEN));
-            memcpy(new_idxList_buf, *idxList, sizeof(int)*idxListLen);
-
-            free(*idxList);
-            *idxList = new_idxList_buf;
-            idxListCap += EXT_LEN;
+std::vector<size_t> select_valid_user(Table_t &table, Command_t *cmd){
+    std::vector<size_t> ret;
+    for (size_t i=0; i<table.size(); i++){
+        const User_t &user = table.users[i];        
+        if ( check_condition(user, cmd) ){
+            ret.push_back(i);
         }
-
-        if ( !check_condition(user, cmd) )continue;
-
-        (*idxList)[ idxListLen++ ] = idx;
     }
-    return idxListLen;
+    return ret;
 }
 
-int check_condition(User_t *user, Command_t *cmd){
+int check_condition(const User_t &user, Command_t *cmd){
     int cnt_statment = cmd->condition.cnt_statment;
     
     if (cnt_statment == 0){
@@ -345,12 +299,12 @@ int check_condition(User_t *user, Command_t *cmd){
     return 0;
 }
 
-int check_compare_statment(User_t *user, CompareStatment_t *s){
+int check_compare_statment(const User_t &user, CompareStatment_t *s){
     if (!strncmp(s->lhs, "\"", 1) || !strncmp(s->lhs, "name", 4) || !strncmp(s->lhs, "email", 5)){
         // string compare
-        char *lhs = get_string_variable(user, s->lhs);
-        char *rhs = get_string_variable(user, s->rhs);
-        int is_same = (strcmp(lhs, rhs)==0);
+        std::string lhs = get_string_variable(user, s->lhs);
+        std::string rhs = get_string_variable(user, s->rhs);
+        int is_same = (lhs == rhs);
         if ( !strncmp(s->op,"=",1) ) return is_same;
         else return !is_same;        
     } else {
@@ -367,16 +321,16 @@ int check_compare_statment(User_t *user, CompareStatment_t *s){
     }
 }
 
-char* get_string_variable(User_t *user, char* s){
+std::string get_string_variable(const User_t &user, char* s){
     if (s[0]=='\"') return s;
-    else if (s[0]=='n') return user->name;
-    else if (s[0]=='e') return user->email;
+    else if (s[0]=='n') return user.name;
+    else if (s[0]=='e') return user.email;
     else return NULL;
 }
 
-int get_numeric_variable(User_t *user, char* s){
-    if (!strncmp(s,"age",3)) return (int)user->age;
-    else if (!strncmp(s,"id",2)) return (int)user->id;
+int get_numeric_variable(const User_t &user, char* s){
+    if (!strncmp(s,"age",3)) return (int)user.age;
+    else if (!strncmp(s,"id",2)) return (int)user.id;
     else {
         return atoi(s);
     }
