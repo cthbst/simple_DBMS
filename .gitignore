@@ -11,3 +11,4 @@ shell
 test/system/output/*
 test/all_test
 test/system/**/large/*
+result.json
