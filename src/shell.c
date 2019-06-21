@@ -6,26 +6,18 @@
 #include "Table.h"
 
 
-int main(int argc, char **argv) {
-    InputBuffer_t *input_buffer = new_InputBuffer();
-    Command_t *cmd = new_Command();
-    State_t *state = new_State();
+int main() {
+    Inputs_t Inputs = read_inputs();
     Table_t table;
-    int cmd_type;
-    for (;;) {
-        cmd = new_Command();
-        print_prompt(state);
-        read_input(input_buffer);
-        cmd_type = parse_input(input_buffer->buffer, cmd);
-        if (cmd_type == BUILT_IN_CMD) {
-            handle_builtin_cmd(table, cmd, state);
-        } else if (cmd_type == QUERY_CMD) {
+
+    for (InputBuffer_t &buf : Inputs){
+        Command_t cmd;
+        cmd.args = buf;
+        if (cmd.type == BUILT_IN_CMD){
+            handle_builtin_cmd(table, cmd);
+        } else if (cmd.type == QUERY_CMD){
             handle_query_cmd(table, cmd);
-        } else if (cmd_type == UNRECOG_CMD) {
-            printf("Unrecognized command '%s'.\n", input_buffer->buffer);
         }
-        cleanup_Command(cmd);
-        clean_InputBuffer(input_buffer);
     }
     return 0;
 }

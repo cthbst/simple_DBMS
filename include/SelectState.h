@@ -2,13 +2,14 @@
 #define SELECT_STATE_H
 
 #include "Command.h"
+using Iter = std::vector<std::string>::iterator;
 
-void field_state_handler(Command_t *cmd, size_t arg_idx);
-void table_state_handler(Command_t *cmd, size_t arg_idx);
-void offset_state_handler(Command_t *cmd, size_t arg_idx);
-void limit_state_handler(Command_t *cmd, size_t arg_idx);
+void field_state_handler(Command_t &cmd, Iter &it);
+void table_state_handler(Command_t &cmd, Iter &it);
+void offset_state_handler(Command_t &cmd, Iter &it);
+void limit_state_handler(Command_t &cmd, Iter &it);
 
-void where_state_handler(Command_t *cmd, size_t arg_idx);
-size_t parse_compare_statment(Command_t *cmd, size_t statment_idx, size_t arg_idx);
+void where_state_handler(Command_t &cmd, Iter &it);
+void parse_compare_statment(CompareStatment_t &stat, Iter &it);
 
 #endif

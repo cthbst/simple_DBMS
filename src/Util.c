@@ -1,66 +1,35 @@
-#include <stdio.h>
-#include <stdio_ext.h>
-#include <stdlib.h>
-#include <string.h>
-#include <unistd.h>
-#include <sys/types.h>
-#include <fcntl.h>
+#include <iostream>
 #include "Util.h"
 #include "Command.h"
 #include "Table.h"
 #include "SelectState.h"
 
 ///
-/// Allocate State_t and initialize some attributes
-/// Return: ptr of new State_t
-///
-State_t* new_State() {
-    State_t *state = (State_t*)malloc(sizeof(State_t));
-    state->saved_stdout = -1;
-    return state;
-}
-
-///
-/// Print shell prompt
-///
-void print_prompt(State_t *state) {
-    if (state->saved_stdout == -1) {
-        printf("db > ");
-    }
-}
-
-///
 /// Print the user in the specific format
 ///
-void print_user(const User_t &user, SelectArgs_t *sel_args) {
-    size_t idx;
-    printf("(");
-    for (idx = 0; idx < sel_args->fields_len; idx++) {
-        if (!strncmp(sel_args->fields[idx], "*", 1)) {
-            printf("%d, %s, %s, %d", user.id, user.name.c_str(), user.email.c_str(), user.age);
+void print_user(const User_t &user, SelectArgs_t &sel_args) {
+    std::cout << "(";
+    int cnt = 0;
+    for (std::string &s : sel_args.fields){
+        if (s == "*"){
+            std::cout << user.id << ", " << user.name << ", " << user.email << ", " << user.age;
         } else {
-            if (idx > 0) printf(", ");
-
-            if (!strncmp(sel_args->fields[idx], "id", 2)) {
-                printf("%d", user.id);
-            } else if (!strncmp(sel_args->fields[idx], "name", 4)) {
-                printf("%s", user.name.c_str());
-            } else if (!strncmp(sel_args->fields[idx], "email", 5)) {
-                printf("%s", user.email.c_str());
-            } else if (!strncmp(sel_args->fields[idx], "age", 3)) {
-                printf("%d", user.age);
-            }
+            if (cnt++ != 0) std::cout << ", ";
+            if (s == "id") std::cout << user.id;
+            else if (s == "name") std::cout << user.name;
+            else if (s == "email") std::cout << user.email;
+            else if (s == "age") std::cout << user.age;
         }
     }
-    printf(")\n");
+    std::cout << ")\n";
 }
 
 ///
 /// Print the users for given offset and limit restriction
 ///
-void print_users(Table_t &table, const std::vector<size_t>& idxList, Command_t *cmd) {
-    int limit = cmd->cmd_args.sel_args.limit;
-    int offset = cmd->cmd_args.sel_args.offset;
+void print_users(Table_t &table, const std::vector<size_t>& idxList, Command_t &cmd) {
+    int limit = cmd.sel_args.limit;
+    int offset = cmd.sel_args.offset;
 
     if (offset == -1) {
         offset = 0;
@@ -70,53 +39,18 @@ void print_users(Table_t &table, const std::vector<size_t>& idxList, Command_t *
         if (limit != -1 && (idx - offset) >= limit) {
             break;
         }
-        print_user(table.users[ idxList[idx] ], &(cmd->cmd_args.sel_args));
+        print_user(table.users[ idxList[idx] ], cmd.sel_args);
     }
-}
-
-///
-/// This function received an output argument
-/// Return: category of the command
-///
-int parse_input(char *input, Command_t *cmd) {
-    char *token;
-    int idx;
-    token = strtok(input, " ,\n");
-    for (idx = 0; strlen(cmd_list[idx].name) != 0; idx++) {
-        if (!strncmp(token, cmd_list[idx].name, cmd_list[idx].len)) {
-            cmd->type = cmd_list[idx].type;
-        }
-    }
-    while (token != NULL) {
-        add_Arg(cmd, token);
-        token = strtok(NULL, " ,\n");
-    }
-    return cmd->type;
 }
 
 ///
 /// Handle built-in commands
 /// Return: command type
 ///
-void handle_builtin_cmd(Table_t &table, Command_t *cmd, State_t *state) {
-    if (!strncmp(cmd->args[0], ".exit", 5)) {
+void handle_builtin_cmd(Table_t &table, Command_t &cmd) {
+    if (cmd.args[0] == ".exit") {
         exit(0);
-    } else if (!strncmp(cmd->args[0], ".output", 7)) {
-        if (cmd->args_len == 2) {
-            if (!strncmp(cmd->args[1], "stdout", 6)) {
-                close(1);
-                dup2(state->saved_stdout, 1);
-                state->saved_stdout = -1;
-            } else if (state->saved_stdout == -1) {
-                int fd = creat(cmd->args[1], 0644);
-                state->saved_stdout = dup(1);
-                if (dup2(fd, 1) == -1) {
-                    state->saved_stdout = -1;
-                }
-                __fpurge(stdout); //This is used to clear the stdout buffer
-            }
-        }
-    } else if (!strncmp(cmd->args[0], ".help", 5)) {
+    } else if (cmd.args[0] == ".help") {
         print_help_msg();
     }
 }
@@ -125,17 +59,17 @@ void handle_builtin_cmd(Table_t &table, Command_t *cmd, State_t *state) {
 /// Handle query type commands
 /// Return: command type
 ///
-int handle_query_cmd(Table_t &table, Command_t *cmd) {
-    if (!strncmp(cmd->args[0], "insert", 6)) {
+int handle_query_cmd(Table_t &table, Command_t &cmd) {
+    if (cmd.args[0] == "insert") {
         handle_insert_cmd(table, cmd);
         return INSERT_CMD;
-    } else if (!strncmp(cmd->args[0], "select", 6)) {
+    } else if (cmd.args[0] == "select") {
         handle_select_cmd(table, cmd);
         return SELECT_CMD;
-    } else if (!strncmp(cmd->args[0], "delete", 6)) {
+    } else if (cmd.args[0] == "delete") {
         handle_delete_cmd(table, cmd);
         return DELETE_CMD;
-    } else if (!strncmp(cmd->args[0], "update", 6)) {
+    } else if (cmd.args[0] == "update") {
         handle_update_cmd(table, cmd);
         return UPDATE_CMD;
     } else {
@@ -143,39 +77,40 @@ int handle_query_cmd(Table_t &table, Command_t *cmd) {
     }
 }
 
-void handle_update_cmd(Table_t &table, Command_t *cmd) {
-    int arg_idx = 3;
-    arg_idx = parse_compare_statment(cmd, 2, arg_idx);
-    cmd->condition.cnt_statment--;
-    if (arg_idx < (int)cmd->args_len) where_state_handler(cmd, arg_idx+1);
+void handle_update_cmd(Table_t &table, Command_t &cmd) {
+    Iter it = cmd.args.begin() + 3;
+    parse_compare_statment(cmd.condition.s[2], it);
+    cmd.condition.cnt_statment--;
+    if (it != cmd.args.end()) where_state_handler(cmd, ++it);
 
-    char *field = cmd->condition.s[2].lhs;
-    char *value = cmd->condition.s[2].rhs;
-
+    const std::string &field = cmd.condition.s[2].lhs;
+    const std::string &value = cmd.condition.s[2].rhs;
+    
     std::vector<size_t> idxList = select_valid_user(table, cmd);
     
-    if (!strncmp(field,"id",2)){
+    if (field == "id"){
         if ( idxList.size() > 1 ) return;
-        int targetId = atoi(value);
+        int targetId = stoi(value);
         if ( table.primary_keys.count(targetId) ) return;
     }
     
     for (size_t idx:idxList){
         User_t &user = table.users[idx];
-        if (!strncmp(field,"id",2)){
+        if (field == "id"){
             table.primary_keys.erase(user.id);
-            user.id = atoi(value);
+            user.id = stoi(value);
             table.primary_keys.insert(user.id);
         }
-        else if (!strncmp(field,"name",4)) user.name = std::string(value);
-        else if (!strncmp(field,"email",5)) user.email = std::string(value);
-        else if (!strncmp(field,"age",3)) user.age = atoi(value);
+        else if (field == "name") user.name = std::string(value);
+        else if (field == "email") user.email = std::string(value);
+        else if (field == "age") user.age = stoi(value);
     }
 }
 
 
-void handle_delete_cmd(Table_t &table, Command_t *cmd) {
-    table_state_handler(cmd, 2);
+void handle_delete_cmd(Table_t &table, Command_t &cmd) {
+    Iter it = cmd.args.begin() + 2;
+    table_state_handler(cmd, it);
     
     std::vector<size_t> idxList = select_valid_user(table, cmd);
     
@@ -195,12 +130,12 @@ void handle_delete_cmd(Table_t &table, Command_t *cmd) {
 ///
 /// The return value is the number of rows insert into table
 /// If the insert operation success, then change the input arg
-/// `cmd->type` to INSERT_CMD
+/// `cmd.type` to INSERT_CMD
 ///
-int handle_insert_cmd(Table_t &table, Command_t *cmd) {
+int handle_insert_cmd(Table_t &table, Command_t &cmd) {
     User_t user = command_to_User(cmd);
     if ( table.add_User(user) ) {
-        cmd->type = INSERT_CMD;
+        cmd.type = INSERT_CMD;
         return 1;
     }
     return 0;
@@ -209,20 +144,20 @@ int handle_insert_cmd(Table_t &table, Command_t *cmd) {
 ///
 /// The return value is the number of rows select from table
 /// If the select operation success, then change the input arg
-/// `cmd->type` to SELECT_CMD
+/// `cmd.type` to SELECT_CMD
 ///
-int handle_select_cmd(Table_t &table, Command_t *cmd) {
-    cmd->type = SELECT_CMD;
-    field_state_handler(cmd, 1);
+int handle_select_cmd(Table_t &table, Command_t &cmd) {
+    cmd.type = SELECT_CMD;
+    Iter it = cmd.args.begin() + 1;
+    field_state_handler(cmd, it);
     
     std::vector<size_t> idxList = select_valid_user(table, cmd);
     
-    int fields_len = cmd->cmd_args.sel_args.fields_len;
-    char **fields = cmd->cmd_args.sel_args.fields;
-    if (fields_len > 0 && 
-            (     !strncmp(fields[0],"sum",3) || 
-                !strncmp(fields[0],"avg",3) ||
-                !strncmp(fields[0],"count",5) )){
+    auto &fields = cmd.sel_args.fields;
+    if (fields.size() && 
+        (     fields[0] == "sum" || 
+                fields[0] == "avg" ||
+                fields[0] == "count" )){
         print_aggregate(table, idxList, cmd);
     } else {
         print_users(table, idxList, cmd);
@@ -230,9 +165,9 @@ int handle_select_cmd(Table_t &table, Command_t *cmd) {
     return table.size();
 }
 
-void print_aggregate(Table_t &table, const std::vector<size_t>& idxList, Command_t *cmd) {
-    if ( cmd->cmd_args.sel_args.limit == 0 ) return;
-    if ( cmd->cmd_args.sel_args.offset > 1 ) return;
+void print_aggregate(Table_t &table, const std::vector<size_t>& idxList, Command_t &cmd) {
+    if ( cmd.sel_args.limit == 0 ) return;
+    if ( cmd.sel_args.offset > 0 ) return;
 
     int cnt = 0;
     int id_sum = 0;
@@ -245,24 +180,23 @@ void print_aggregate(Table_t &table, const std::vector<size_t>& idxList, Command
         age_sum += user.age;
     }
     
-    int fields_len = cmd->cmd_args.sel_args.fields_len;
-    char **fields = cmd->cmd_args.sel_args.fields;
+    auto &fields = cmd.sel_args.fields;
     printf("(");
     int num_aggregate = 0;
-    for (int i = 0; i < fields_len; i++) {    
-        if ( !strncmp(fields[i], "count",5) ){
+    for (size_t i = 0; i < fields.size(); i++) {    
+        if ( fields[i] == "count" ){
             if (num_aggregate++) printf(",");
             printf("%d", cnt);
-        } else if ( !strncmp(fields[i], "sum(age)",8) ){
+        } else if ( fields[i] == "sum(age)" ){
             if (num_aggregate++) printf(",");
             printf("%d", age_sum);
-        } else if ( !strncmp(fields[i], "avg(age)",8) ){
+        } else if ( fields[i] == "avg(age)" ){
             if (num_aggregate++) printf(",");
             printf("%.3f", (double)age_sum/cnt);
-        } else if ( !strncmp(fields[i], "sum(id)",8) ){
+        } else if ( fields[i] == "sum(id)" ){
             if (num_aggregate++) printf(",");
             printf("%d", id_sum);
-        } else if ( !strncmp(fields[i], "avg(id)",8) ){
+        } else if ( fields[i] == "avg(id)" ){
             if (num_aggregate++) printf(",");
             printf("%.3f", (double)id_sum/cnt);
         }
@@ -271,7 +205,7 @@ void print_aggregate(Table_t &table, const std::vector<size_t>& idxList, Command
 }
 
 
-std::vector<size_t> select_valid_user(Table_t &table, Command_t *cmd){
+std::vector<size_t> select_valid_user(Table_t &table, Command_t &cmd){
     std::vector<size_t> ret;
     for (size_t i=0; i<table.size(); i++){
         const User_t &user = table.users[i];        
@@ -282,58 +216,56 @@ std::vector<size_t> select_valid_user(Table_t &table, Command_t *cmd){
     return ret;
 }
 
-int check_condition(const User_t &user, Command_t *cmd){
-    int cnt_statment = cmd->condition.cnt_statment;
+bool check_condition(const User_t &user, Command_t &cmd){
+    int cnt_statment = cmd.condition.cnt_statment;
     
     if (cnt_statment == 0){
         return 1;
     } else if (cnt_statment == 1) {
-        return check_compare_statment(user, &(cmd->condition.s[0]));
+        return check_compare_statment(user, cmd.condition.s[0]);
     } else if (cnt_statment == 2) {
-        int lhs = check_compare_statment(user, &(cmd->condition.s[0]));
-        int rhs = check_compare_statment(user, &(cmd->condition.s[1]));
-        if (cmd->condition.logic == AND) return lhs && rhs;
-        else if (cmd->condition.logic == OR) return lhs || rhs;
+        int lhs = check_compare_statment(user, cmd.condition.s[0]);
+        int rhs = check_compare_statment(user, cmd.condition.s[1]);
+        if (cmd.condition.logic == AND) return lhs && rhs;
+        else if (cmd.condition.logic == OR) return lhs || rhs;
         else return 0;
     }
     return 0;
 }
 
-int check_compare_statment(const User_t &user, CompareStatment_t *s){
-    if (!strncmp(s->lhs, "\"", 1) || !strncmp(s->lhs, "name", 4) || !strncmp(s->lhs, "email", 5)){
+bool check_compare_statment(const User_t &user,const CompareStatment_t &s){
+    if (s.lhs[0] == '\"' || s.lhs == "name" || s.lhs == "email"){
         // string compare
-        std::string lhs = get_string_variable(user, s->lhs);
-        std::string rhs = get_string_variable(user, s->rhs);
+        std::string lhs = get_string_variable(user, s.lhs);
+        std::string rhs = get_string_variable(user, s.rhs);
         int is_same = (lhs == rhs);
-        if ( !strncmp(s->op,"=",1) ) return is_same;
+        if ( s.op[0] == '=' ) return is_same;
         else return !is_same;        
     } else {
         // numeric comparision
-        int lhs = get_numeric_variable(user, s->lhs);
-        int rhs = get_numeric_variable(user, s->rhs);
-        if ( !strncmp(s->op,"=",1) ) return lhs == rhs;
-        else if ( !strncmp(s->op,"!=",2) ) return lhs != rhs;
-        else if ( !strncmp(s->op,">=",2) ) return lhs >= rhs;
-        else if ( !strncmp(s->op,"<=",2) ) return lhs <= rhs;
-        else if ( !strncmp(s->op,">",1) ) return lhs > rhs;
-        else if ( !strncmp(s->op,"<",1) ) return lhs < rhs;
+        int lhs = get_numeric_variable(user, s.lhs);
+        int rhs = get_numeric_variable(user, s.rhs);
+        if ( s.op == "=" ) return lhs == rhs;
+        else if ( s.op == "!=" ) return lhs != rhs;
+        else if ( s.op == ">=" ) return lhs >= rhs;
+        else if ( s.op == "<=" ) return lhs <= rhs;
+        else if ( s.op == ">" ) return lhs > rhs;
+        else if ( s.op == "<" ) return lhs < rhs;
         else return 0;
     }
 }
 
-std::string get_string_variable(const User_t &user, char* s){
+std::string get_string_variable(const User_t &user, const std::string &s){
     if (s[0]=='\"') return s;
     else if (s[0]=='n') return user.name;
     else if (s[0]=='e') return user.email;
-    else return NULL;
+    else return "";
 }
 
-int get_numeric_variable(const User_t &user, char* s){
-    if (!strncmp(s,"age",3)) return (int)user.age;
-    else if (!strncmp(s,"id",2)) return (int)user.id;
-    else {
-        return atoi(s);
-    }
+int get_numeric_variable(const User_t &user, const std::string &s){
+    if (s[0] == 'a') return user.age;
+    if (s[0] == 'i') return user.id;
+    return stoi(s);
 }
 
 

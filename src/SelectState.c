@@ -1,165 +1,76 @@
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h> // for test
 #include "Command.h"
 #include "SelectState.h"
+#include <string.h>
+#include <stdlib.h>
 
-void field_state_handler(Command_t *cmd, size_t arg_idx) {
-    cmd->cmd_args.sel_args.fields = NULL;
-    cmd->cmd_args.sel_args.fields_len = 0;
-    cmd->cmd_args.sel_args.limit = -1;
-    cmd->cmd_args.sel_args.offset = -1;
-    while(arg_idx < cmd->args_len) {
-        if (!strncmp(cmd->args[arg_idx], "*", 1)) {
-            add_select_field(cmd, cmd->args[arg_idx]);
-        } else if (!strncmp(cmd->args[arg_idx], "id", 2)) {
-            add_select_field(cmd, cmd->args[arg_idx]);
-        } else if (!strncmp(cmd->args[arg_idx], "name", 4)) {
-            add_select_field(cmd, cmd->args[arg_idx]);
-        } else if (!strncmp(cmd->args[arg_idx], "email", 5)) {
-            add_select_field(cmd, cmd->args[arg_idx]);
-        } else if (!strncmp(cmd->args[arg_idx], "age", 3)) {
-            add_select_field(cmd, cmd->args[arg_idx]);
-        } else if (!strncmp(cmd->args[arg_idx], "count", 5)) {
-            add_select_field(cmd, cmd->args[arg_idx]);
-        } else if (!strncmp(cmd->args[arg_idx], "sum", 3)) {
-            add_select_field(cmd, cmd->args[arg_idx]);
-        } else if (!strncmp(cmd->args[arg_idx], "avg", 3)) {
-            add_select_field(cmd, cmd->args[arg_idx]);
-        } else if (!strncmp(cmd->args[arg_idx], "from", 4)) {
-            table_state_handler(cmd, arg_idx+1);
-            return;
+void field_state_handler(Command_t &cmd, Iter &it) {
+    while (it != cmd.args.end()) {
+        if (*it == "*"
+                || *it == "id" || *it == "name" || *it == "email" || *it == "age"
+                || *it == "count" || *it == "sum" || *it == "avg"
+            ) {
+            add_select_field(cmd, *it);
+            it++;
+        } else if (*it == "from") {
+            table_state_handler(cmd, ++it);
         } else {
-            cmd->type = UNRECOG_CMD;
             return;
         }
-        arg_idx += 1;
     }
-    cmd->type = UNRECOG_CMD;
-    return;
 }
 
-void table_state_handler(Command_t *cmd, size_t arg_idx) {
-    if (arg_idx < cmd->args_len
-            && !strncmp(cmd->args[arg_idx], "table", 5)) {
+void table_state_handler(Command_t &cmd, Iter &it) {
+    if (it == cmd.args.end()) return;
 
-        arg_idx++;
-        if (arg_idx == cmd->args_len) {
-            return;
-        } else if (!strncmp(cmd->args[arg_idx], "where", 5)) {
-            where_state_handler(cmd, arg_idx+1);
-            return;
-        } else if (!strncmp(cmd->args[arg_idx], "offset", 6)) {
-            offset_state_handler(cmd, arg_idx+1);
-            return;
-        } else if (!strncmp(cmd->args[arg_idx], "limit", 5)) {
-            limit_state_handler(cmd, arg_idx+1);
-            return;
-        }
+    if (*(it++) != "table") return;
+    if (it == cmd.args.end()) return;
+
+    if (*it == "where") {
+        where_state_handler(cmd, ++it);
+    } else if (*it == "offset") {
+        offset_state_handler(cmd, ++it);
+    } else if (*it == "limit") {
+        limit_state_handler(cmd, ++it);
     }
-    cmd->type = UNRECOG_CMD;
-    return;
 }
 
-void where_state_handler(Command_t *cmd, size_t arg_idx) {
-    if (arg_idx < cmd->args_len) {
-        
-        arg_idx = parse_compare_statment(cmd, 0, arg_idx);
-        int have_logic = 0;
-        if (arg_idx == cmd->args_len) {
-            return;
-        } else if ( !strncmp(cmd->args[arg_idx], "and", 3) ){
-            cmd->condition.logic = AND;
-            arg_idx += 1;
-            have_logic = 1;
-        } else if ( !strncmp(cmd->args[arg_idx], "or", 2) ){
-            cmd->condition.logic = OR;
-            arg_idx += 1;
-            have_logic = 1;
-        }
-        if ( have_logic ){
-            arg_idx = parse_compare_statment(cmd, 1, arg_idx);
-        }
-
-        if (arg_idx == cmd->args_len) {
-            return;
-        } else if (!strncmp(cmd->args[arg_idx], "offset", 6)) {
-            offset_state_handler(cmd, arg_idx+1);
-            return;
-        } else if (arg_idx < cmd->args_len
-                && !strncmp(cmd->args[arg_idx], "limit", 5)) {
-
-            limit_state_handler(cmd, arg_idx+1);
-            return;
-        }
+void where_state_handler(Command_t &cmd, Iter &it) {
+    if (it == cmd.args.end()) return;
+    
+    parse_compare_statment(cmd.condition.s[0], it);
+    if (it == cmd.args.end()) return;
+    
+    if (*it == "and" || *it == "or") {
+        cmd.condition.logic = (*(it++)=="and"?AND:OR);
+        parse_compare_statment(cmd.condition.s[1], it);
+        if (it == cmd.args.end()) return;
     }
-    cmd->type = UNRECOG_CMD;
-    return;
+    
+    if (*it == "offset") {
+        offset_state_handler(cmd, ++it);
+    } else if (*it == "limit") {
+        limit_state_handler(cmd, ++it);
+    }
 }
 
-size_t parse_compare_statment(Command_t *cmd, size_t statment_idx, size_t arg_idx){
-    cmd->condition.cnt_statment += 1;
-    CompareStatment_t *stat = &(cmd->condition.s[statment_idx]);
-
-    char *str = NULL;
-    /* stat->lhs */ {
-        if (str==NULL) str = cmd->args[arg_idx++];
-        char *p = strpbrk(str, "!=<>");
-        if (p==NULL){
-            stat->lhs = strdup(str);
-            str = NULL;
-        } else {
-            stat->lhs = strndup(str, p-str);
-            str = p;
-        }
-    }
-    /* stat->op */ {
-        if (str==NULL) str = cmd->args[arg_idx++];
-        int len = strspn (str,"!=<>");
-        if (str[len]=='\0'){
-            stat->op = strdup(str);
-            str = NULL;
-        } else {
-            stat->op = strndup(str, len);
-            str += len;
-        }
-    }
-    /* stat->rhs */ {
-        if (str==NULL) str = cmd->args[arg_idx++];
-        stat->rhs = strdup(str);
-    }
-    return arg_idx;
+void parse_compare_statment(CompareStatment_t &stat, Iter &it) {
+    stat.lhs = *(it++);
+    stat.op = *(it++);
+    stat.rhs = *(it++);
 }
 
-void offset_state_handler(Command_t *cmd, size_t arg_idx) {
-    if (arg_idx < cmd->args_len) {
-        cmd->cmd_args.sel_args.offset = atoi(cmd->args[arg_idx]);
+void offset_state_handler(Command_t &cmd, Iter &it) {
+    if (it == cmd.args.end()) return;
 
-        arg_idx++;
-
-        if (arg_idx == cmd->args_len) {
-            return;
-        } else if (arg_idx < cmd->args_len
-                && !strncmp(cmd->args[arg_idx], "limit", 5)) {
-
-            limit_state_handler(cmd, arg_idx+1);
-            return;
-        }
+    cmd.sel_args.offset = stoi(*(it++));
+    if (it == cmd.args.end()) return;
+    
+    if (*it == "limit") {
+        limit_state_handler(cmd, ++it);
     }
-    cmd->type = UNRECOG_CMD;
-    return;
 }
 
-void limit_state_handler(Command_t *cmd, size_t arg_idx) {
-    if (arg_idx < cmd->args_len) {
-        cmd->cmd_args.sel_args.limit = atoi(cmd->args[arg_idx]);
-
-        arg_idx++;
-
-        if (arg_idx == cmd->args_len) {
-            return;
-        }
-    }
-    cmd->type = UNRECOG_CMD;
-    return;
+void limit_state_handler(Command_t &cmd, Iter &it) {
+    if (it == cmd.args.end()) return;
+    cmd.sel_args.limit = stoi(*(it++));
 }

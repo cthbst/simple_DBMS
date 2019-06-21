@@ -12,6 +12,6 @@ struct User_t {
     User_t();
 };
 
-User_t command_to_User(Command_t *cmd);
+User_t command_to_User(const Command_t &cmd);
 
 #endif
