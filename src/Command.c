@@ -19,12 +19,22 @@ SelectArgs_t::SelectArgs_t(){
     limit = -1;
 }
 
+Condition_t::Condition_t(){
+    cnt_statment = 0;
+}
+
 Command_t::Command_t(){
     type = UNRECOG_CMD;
 }
 
-void add_Arg(Command_t &cmd, const std::string &argument) {
-    cmd.args.push_back(argument);
+Command_t::Command_t(const std::vector<std::string> &_args){
+    type = UNRECOG_CMD;
+    args = _args;
+    for (size_t i = 0; i < 8; i++){
+        if (args[0] == cmd_list[i].name){
+            type = cmd_list[i].type;
+        }
+    }
 }
 
 void add_select_field(Command_t &cmd, const std::string &argument) {

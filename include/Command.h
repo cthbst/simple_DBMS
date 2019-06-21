@@ -17,7 +17,7 @@ enum {
 };
 
 struct CMD_t{
-    char name[256];
+    std::string name;
     int len;
     unsigned char type;
 };
@@ -48,6 +48,8 @@ struct Condition_t{
 	CompareStatment_t s[3];
     Logic_t logic;
 	int cnt_statment;
+
+    Condition_t();
 };
 
 struct Command_t {
@@ -57,9 +59,9 @@ struct Command_t {
     Condition_t condition;
 
     Command_t();
+    Command_t(const std::vector<std::string>&);
 };
 
-void add_Arg(Command_t &cmd, const std::string &argument);
 void add_select_field(Command_t &cmd, const std::string &argument);
 
 #endif

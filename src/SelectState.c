@@ -7,7 +7,7 @@ void field_state_handler(Command_t &cmd, Iter &it) {
     while (it != cmd.args.end()) {
         if (*it == "*"
                 || *it == "id" || *it == "name" || *it == "email" || *it == "age"
-                || *it == "count" || *it == "sum" || *it == "avg"
+                || (*it).substr(0,5) == "count" || (*it).substr(0,3) == "sum" || (*it).substr(0,3) == "avg"
             ) {
             add_select_field(cmd, *it);
             it++;
@@ -22,7 +22,7 @@ void field_state_handler(Command_t &cmd, Iter &it) {
 void table_state_handler(Command_t &cmd, Iter &it) {
     if (it == cmd.args.end()) return;
 
-    if (*(it++) != "table") return;
+    if (*(it++) != "user") return;
     if (it == cmd.args.end()) return;
 
     if (*it == "where") {
@@ -37,11 +37,13 @@ void table_state_handler(Command_t &cmd, Iter &it) {
 void where_state_handler(Command_t &cmd, Iter &it) {
     if (it == cmd.args.end()) return;
     
+    cmd.condition.cnt_statment++;
     parse_compare_statment(cmd.condition.s[0], it);
     if (it == cmd.args.end()) return;
     
     if (*it == "and" || *it == "or") {
         cmd.condition.logic = (*(it++)=="and"?AND:OR);
+        cmd.condition.cnt_statment++;
         parse_compare_statment(cmd.condition.s[1], it);
         if (it == cmd.args.end()) return;
     }

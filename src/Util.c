@@ -43,22 +43,16 @@ void print_users(Table_t &table, const std::vector<size_t>& idxList, Command_t &
     }
 }
 
-///
-/// Handle built-in commands
-/// Return: command type
-///
 void handle_builtin_cmd(Table_t &table, Command_t &cmd) {
     if (cmd.args[0] == ".exit") {
         exit(0);
     } else if (cmd.args[0] == ".help") {
         print_help_msg();
+    } else if (cmd.args[0] == ".output") {
+        if (!freopen(cmd.args[1].c_str(), "w", stdout)) exit(0);
     }
 }
 
-///
-/// Handle query type commands
-/// Return: command type
-///
 int handle_query_cmd(Table_t &table, Command_t &cmd) {
     if (cmd.args[0] == "insert") {
         handle_insert_cmd(table, cmd);
@@ -79,6 +73,7 @@ int handle_query_cmd(Table_t &table, Command_t &cmd) {
 
 void handle_update_cmd(Table_t &table, Command_t &cmd) {
     Iter it = cmd.args.begin() + 3;
+    cmd.condition.cnt_statment++;
     parse_compare_statment(cmd.condition.s[2], it);
     cmd.condition.cnt_statment--;
     if (it != cmd.args.end()) where_state_handler(cmd, ++it);
@@ -90,7 +85,7 @@ void handle_update_cmd(Table_t &table, Command_t &cmd) {
     
     if (field == "id"){
         if ( idxList.size() > 1 ) return;
-        int targetId = stoi(value);
+        int targetId = std::stoi(value);
         if ( table.primary_keys.count(targetId) ) return;
     }
     
@@ -98,12 +93,12 @@ void handle_update_cmd(Table_t &table, Command_t &cmd) {
         User_t &user = table.users[idx];
         if (field == "id"){
             table.primary_keys.erase(user.id);
-            user.id = stoi(value);
+            user.id = std::stoi(value);
             table.primary_keys.insert(user.id);
         }
         else if (field == "name") user.name = std::string(value);
         else if (field == "email") user.email = std::string(value);
-        else if (field == "age") user.age = stoi(value);
+        else if (field == "age") user.age = std::stoi(value);
     }
 }
 
@@ -155,9 +150,9 @@ int handle_select_cmd(Table_t &table, Command_t &cmd) {
     
     auto &fields = cmd.sel_args.fields;
     if (fields.size() && 
-        (     fields[0] == "sum" || 
-                fields[0] == "avg" ||
-                fields[0] == "count" )){
+        (     fields[0].substr(0,3) == "sum" || 
+                fields[0].substr(0,3) == "avg" ||
+                fields[0].substr(0,5) == "count" )){
         print_aggregate(table, idxList, cmd);
     } else {
         print_users(table, idxList, cmd);
@@ -184,20 +179,20 @@ void print_aggregate(Table_t &table, const std::vector<size_t>& idxList, Command
     printf("(");
     int num_aggregate = 0;
     for (size_t i = 0; i < fields.size(); i++) {    
-        if ( fields[i] == "count" ){
-            if (num_aggregate++) printf(",");
+        if ( fields[i].substr(0,5) == "count" ){
+            if (num_aggregate++) printf(", ");
             printf("%d", cnt);
         } else if ( fields[i] == "sum(age)" ){
-            if (num_aggregate++) printf(",");
+            if (num_aggregate++) printf(", ");
             printf("%d", age_sum);
         } else if ( fields[i] == "avg(age)" ){
-            if (num_aggregate++) printf(",");
+            if (num_aggregate++) printf(", ");
             printf("%.3f", (double)age_sum/cnt);
         } else if ( fields[i] == "sum(id)" ){
-            if (num_aggregate++) printf(",");
+            if (num_aggregate++) printf(", ");
             printf("%d", id_sum);
         } else if ( fields[i] == "avg(id)" ){
-            if (num_aggregate++) printf(",");
+            if (num_aggregate++) printf(", ");
             printf("%.3f", (double)id_sum/cnt);
         }
     }
@@ -218,7 +213,7 @@ std::vector<size_t> select_valid_user(Table_t &table, Command_t &cmd){
 
 bool check_condition(const User_t &user, Command_t &cmd){
     int cnt_statment = cmd.condition.cnt_statment;
-    
+
     if (cnt_statment == 0){
         return 1;
     } else if (cnt_statment == 1) {
@@ -265,7 +260,7 @@ std::string get_string_variable(const User_t &user, const std::string &s){
 int get_numeric_variable(const User_t &user, const std::string &s){
     if (s[0] == 'a') return user.age;
     if (s[0] == 'i') return user.id;
-    return stoi(s);
+    return std::stoi(s);
 }
 
 
