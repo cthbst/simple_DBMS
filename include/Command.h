@@ -27,6 +27,7 @@ extern CMD_t cmd_list[];
 struct SelectArgs_t{
     std::string table_name;
     std::vector< std::string > fields;
+    std::string join;
     int offset;
     int limit;
 

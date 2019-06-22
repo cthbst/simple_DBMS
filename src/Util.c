@@ -1,6 +1,6 @@
 #include <iostream>
 #include <string>
-#include <bits/stdc++.h>
+#include <iomanip>
 #include "Util.h"
 #include "Command.h"
 #include "Table.h"
@@ -157,7 +157,10 @@ int handle_select_cmd(Table_t &table, Command_t &cmd) {
     field_state_handler(cmd, it);
     auto &fields = cmd.sel_args.fields;
     
-    if ( cmd.sel_args.table_name == "user" ) {
+    if (cmd.sel_args.join != ""){
+        std::vector<size_t> idxList = select_valid_user(table, cmd);
+        print_join(table, idxList, cmd);
+    } else if ( cmd.sel_args.table_name == "user" ) {
         std::vector<size_t> idxList = select_valid_user(table, cmd);
     
         if (fields.size() && 
@@ -179,6 +182,25 @@ int handle_select_cmd(Table_t &table, Command_t &cmd) {
         }
     }
     return table.size();
+}
+
+void print_join(Table_t &table, const std::vector<size_t>& idxList, Command_t &cmd) {
+    if (idxList.size() == 0) return;
+    if ( cmd.sel_args.limit == 0 ) return;
+    if ( cmd.sel_args.offset > 0 ) return;
+
+    std::unordered_map<int,int> cnt_like[2];
+    for (auto &x : table.like_pairs) {
+        cnt_like[0][ x.first ]++;
+        cnt_like[1][ x.second ]++; 
+    }
+    
+    int idx = (cmd.sel_args.join == "id1"?0:1);
+    int ans = 0;
+    for (auto i : idxList) {
+        ans += cnt_like[idx][ table.users[i].id ];
+    }
+    std::cout << "(" << ans << ")" << std::endl;
 }
 
 void print_likes(Table_t &table, Command_t &cmd) {

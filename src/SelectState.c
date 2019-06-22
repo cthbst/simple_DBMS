@@ -28,7 +28,12 @@ void table_state_handler(Command_t &cmd, Iter &it) {
         it++;
     }
     if (it == cmd.args.end()) return;
-
+    
+    if (*it == "join"){
+        cmd.sel_args.join = *(it+5);
+        it += 6;
+    }
+    
     if (*it == "where") {
         where_state_handler(cmd, ++it);
     } else if (*it == "offset") {
