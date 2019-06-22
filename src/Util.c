@@ -1,5 +1,6 @@
 #include <iostream>
 #include <string>
+#include <bits/stdc++.h>
 #include "Util.h"
 #include "Command.h"
 #include "Table.h"
@@ -210,6 +211,37 @@ void print_like(const std::pair<int,int> &like, SelectArgs_t &args){
 }
 
 void print_likes_aggregate(Table_t &table, Command_t &cmd){
+    if ( cmd.sel_args.limit == 0 ) return;
+    if ( cmd.sel_args.offset > 0 ) return;
+
+    long long sum_id1 = 0;
+    long long sum_id2 = 0;
+    int sz = table.like_pairs.size();
+    for (auto &x : table.like_pairs) {
+        sum_id1 += x.first;
+        sum_id2 += x.second;
+    }
+    
+    int cnt = 0;
+    std::cout << "(";
+    for (auto &field : cmd.sel_args.fields){
+        if (cnt++ > 0) std::cout << ", ";
+        
+        if (field.substr(0,5) == "count") {
+            std::cout << sz;
+        } else if (field == "sum(id1)") {
+            std::cout << sum_id1;
+        } else if (field == "sum(id2)") {
+            std::cout << sum_id2;
+        } else if (field == "avg(id1)") {
+            std::cout << std::fixed << std::setprecision(3);
+            std::cout << (double)sum_id1 / sz;
+        } else if (field == "avg(id2)") {
+            std::cout << std::fixed << std::setprecision(3);
+            std::cout << (double)sum_id2 / sz;
+        }
+    }
+    std::cout << ")\n";
 }
 
 void print_aggregate(Table_t &table, const std::vector<size_t>& idxList, Command_t &cmd) {
