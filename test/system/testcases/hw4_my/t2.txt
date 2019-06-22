@@ -1,0 +1,16 @@
+insert into user 1 "user1" "user1@gmail.com" 18
+insert into user 2 "user2" "user2@gmail.com" 19
+insert into user 3 "user3" "user3@gmail.com" 20
+insert into user 4 "user4" "user4@gmail.com" 21
+insert into user 5 "user5" "user5@gmail.com" 22
+insert into like 1 2
+insert into like 2 3
+insert into like 4 1
+insert into like 3 1
+select id1 from like
+select id1 from like offset 1 limit 2
+select id2 from like
+select id2 from like offset 1 limit 2
+select id1 id2 from like
+select id1 id2 from like offset 1 limit 2
+.exit

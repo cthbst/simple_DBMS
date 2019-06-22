@@ -22,4 +22,8 @@ void print_aggregate(Table_t &table, const std::vector<size_t>& idxList, Command
 void handle_delete_cmd(Table_t &table, Command_t &cmd);
 void handle_update_cmd(Table_t &table, Command_t &cmd);
 
+void print_likes(Table_t &table, Command_t &cmd);
+void print_like(const std::pair<int,int> &like, SelectArgs_t &args);
+void print_likes_aggregate(Table_t &table, Command_t &cmd);
+
 #endif

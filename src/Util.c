@@ -154,19 +154,62 @@ int handle_select_cmd(Table_t &table, Command_t &cmd) {
     cmd.type = SELECT_CMD;
     Iter it = cmd.args.begin() + 1;
     field_state_handler(cmd, it);
-    
-    std::vector<size_t> idxList = select_valid_user(table, cmd);
-    
     auto &fields = cmd.sel_args.fields;
-    if (fields.size() && 
-        (     fields[0].substr(0,3) == "sum" || 
-                fields[0].substr(0,3) == "avg" ||
-                fields[0].substr(0,5) == "count" )){
-        print_aggregate(table, idxList, cmd);
-    } else {
-        print_users(table, idxList, cmd);
+    
+    if ( cmd.sel_args.table_name == "user" ) {
+        std::vector<size_t> idxList = select_valid_user(table, cmd);
+    
+        if (fields.size() && 
+            (     fields[0].substr(0,3) == "sum" || 
+                    fields[0].substr(0,3) == "avg" ||
+                    fields[0].substr(0,5) == "count" )){
+            print_aggregate(table, idxList, cmd);
+        } else {
+            print_users(table, idxList, cmd);
+        }
+    } else { // == "like"
+        if (fields.size() && 
+            (     fields[0].substr(0,3) == "sum" || 
+                    fields[0].substr(0,3) == "avg" ||
+                    fields[0].substr(0,5) == "count" )){
+            print_likes_aggregate(table, cmd);
+        } else {
+            print_likes(table, cmd);
+        }
     }
     return table.size();
+}
+
+void print_likes(Table_t &table, Command_t &cmd) {
+    int offset = cmd.sel_args.offset;
+    int limit = cmd.sel_args.limit;
+    if (offset == -1) offset = 0;
+    for (int i = offset; i<(int)table.like_pairs.size(); i++) {
+        if (limit != -1 && (i - offset) >= limit) {
+            break;
+        }
+     
+        print_like(table.like_pairs[i], cmd.sel_args);
+    }
+}
+
+void print_like(const std::pair<int,int> &like, SelectArgs_t &args){
+    int cnt = 0;
+    std::cout << "(";
+    for (auto &field : args.fields){
+        if (field == "*") {
+            std::cout << like.first << ", " << like.second;
+        } else {
+            if (cnt) std::cout << ", ";
+            if (field == "id1") std::cout << like.first;
+            else if (field == "id2") std::cout << like.second;
+            cnt++;
+        }
+    }
+    std::cout << ")\n";
+}
+
+void print_likes_aggregate(Table_t &table, Command_t &cmd){
 }
 
 void print_aggregate(Table_t &table, const std::vector<size_t>& idxList, Command_t &cmd) {

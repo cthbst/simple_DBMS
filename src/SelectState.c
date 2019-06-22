@@ -6,7 +6,7 @@
 void field_state_handler(Command_t &cmd, Iter &it) {
     while (it != cmd.args.end()) {
         if (*it == "*"
-                || *it == "id" || *it == "name" || *it == "email" || *it == "age"
+                || (*it).substr(0,2) == "id" || *it == "name" || *it == "email" || *it == "age"
                 || (*it).substr(0,5) == "count" || (*it).substr(0,3) == "sum" || (*it).substr(0,3) == "avg"
             ) {
             add_select_field(cmd, *it);
