@@ -20,9 +20,13 @@ void field_state_handler(Command_t &cmd, Iter &it) {
 }
 
 void table_state_handler(Command_t &cmd, Iter &it) {
-    if (it == cmd.args.end()) return;
-
-    if (*(it++) != "user") return;
+    if (*it == "user"){
+        cmd.sel_args.table_name = "user";
+        it++;
+    } else if (*it == "like") {
+        cmd.sel_args.table_name = "like";
+        it++;
+    }
     if (it == cmd.args.end()) return;
 
     if (*it == "where") {

@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string>
 #include "Util.h"
 #include "Command.h"
 #include "Table.h"
@@ -128,12 +129,20 @@ void handle_delete_cmd(Table_t &table, Command_t &cmd) {
 /// `cmd.type` to INSERT_CMD
 ///
 int handle_insert_cmd(Table_t &table, Command_t &cmd) {
-    User_t user = command_to_User(cmd);
-    if ( table.add_User(user) ) {
-        cmd.type = INSERT_CMD;
+    if (cmd.args[2] == "user"){
+        User_t user = command_to_User(cmd);
+        if ( table.add_User(user) ) {
+            cmd.type = INSERT_CMD;
+            return 1;
+        }
+        return 0;
+    } else {
+        int u = stoi( cmd.args[3] );
+        int v = stoi( cmd.args[4] );
+        table.like[u] = v;
+        table.like_pairs.push_back({u,v});
         return 1;
     }
-    return 0;
 }
 
 ///

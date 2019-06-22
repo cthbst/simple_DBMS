@@ -8,6 +8,8 @@
 
 
 int main() {
+    std::cin.tie(0); std::cin.sync_with_stdio(0);
+    std::cout.tie(0);
     Inputs_t Inputs = read_inputs();
     Table_t table;
 
