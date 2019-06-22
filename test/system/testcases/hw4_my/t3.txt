@@ -14,4 +14,5 @@ select sum(id2) from like
 select avg(id1) from like
 select avg(id2) from like
 select sum(id1), sum(id2) from like
+select sum(id), sum(id) from user
 .exit

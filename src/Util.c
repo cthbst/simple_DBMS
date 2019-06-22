@@ -282,27 +282,29 @@ void print_aggregate(Table_t &table, const std::vector<size_t>& idxList, Command
     }
     
     auto &fields = cmd.sel_args.fields;
-    printf("(");
+    std::cout << "(";
     int num_aggregate = 0;
     for (size_t i = 0; i < fields.size(); i++) {    
         if ( fields[i].substr(0,5) == "count" ){
-            if (num_aggregate++) printf(", ");
-            printf("%d", cnt);
+            if (num_aggregate++) std::cout << ", ";
+            std::cout << cnt;
         } else if ( fields[i] == "sum(age)" ){
-            if (num_aggregate++) printf(", ");
-            printf("%d", age_sum);
+            if (num_aggregate++) std::cout << ", ";
+            std::cout << age_sum;
         } else if ( fields[i] == "avg(age)" ){
-            if (num_aggregate++) printf(", ");
-            printf("%.3f", (double)age_sum/cnt);
+            if (num_aggregate++) std::cout << ", ";
+            std::cout << std::fixed << std::setprecision(3);
+            std::cout << (double)age_sum/cnt;
         } else if ( fields[i] == "sum(id)" ){
-            if (num_aggregate++) printf(", ");
-            printf("%d", id_sum);
+            if (num_aggregate++) std::cout << ", ";
+            std::cout << id_sum;
         } else if ( fields[i] == "avg(id)" ){
-            if (num_aggregate++) printf(", ");
-            printf("%.3f", (double)id_sum/cnt);
+            if (num_aggregate++) std::cout << ", ";
+            std::cout << std::fixed << std::setprecision(3);
+            std::cout << (double)id_sum/cnt;
         }
     }
-    printf(")\n");
+    std::cout << ")\n";
 }
 
 
