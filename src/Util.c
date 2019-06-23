@@ -188,16 +188,18 @@ void print_join(Table_t &table, const std::vector<size_t>& idxList, Command_t &c
     if ( cmd.sel_args.limit == 0 ) return;
     if ( cmd.sel_args.offset > 0 ) return;
 
-    std::unordered_map<int,int> cnt_like[2];
+    // std::unordered_map<int,int> cnt_like[2];
+    table.cnt_like[0].clear();
+    talbe.cnt_like[1].clear();
     for (auto &x : table.like_pairs) {
-        cnt_like[0][ x.first ]++;
-        cnt_like[1][ x.second ]++; 
+        table.cnt_like[0][ x.first ]++;
+        table.cnt_like[1][ x.second ]++; 
     }
     
     int idx = (cmd.sel_args.join == "id1"?0:1);
     int ans = 0;
     for (auto i : idxList) {
-        ans += cnt_like[idx][ table.users[i].id ];
+        ans += table.cnt_like[idx][ table.users[i].id ];
     }
     std::cout << "(" << ans << ")" << std::endl;
 }

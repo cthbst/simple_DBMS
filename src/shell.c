@@ -8,12 +8,13 @@
 
 
 int main() {
-    std::cin.tie(0); std::cin.sync_with_stdio(0);
-    std::cout.tie(0);
-    Inputs_t Inputs = read_inputs();
+    // std::cin.tie(0); std::cin.sync_with_stdio(0);
+    // std::cout.tie(0);
     Table_t table;
-
-    for (InputBuffer_t &buf : Inputs){
+    
+    std::string s;
+    while ( std::getline(std::cin, s) ){
+        auto buf = to_InputBuffer(s);
         Command_t cmd(buf);
         if (cmd.type == BUILT_IN_CMD){
             handle_builtin_cmd(table, cmd);

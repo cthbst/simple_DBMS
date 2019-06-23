@@ -15,6 +15,7 @@ struct Table_t {
     std::unordered_set<int> primary_keys;
     std::unordered_map<int,int> like;
     std::vector<std::pair<int,int>> like_pairs;
+    std::vector< std::unordered_map<int,int> > cnt_like;
     
     Table_t ();
     size_t size();
