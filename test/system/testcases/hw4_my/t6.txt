@@ -7,6 +7,6 @@ insert into like 1 2
 insert into like 2 3
 insert into like 4 1
 insert into like 3 1
-select count(*) from user join like on id = id1
-select count(*) from user join like on id = id2
+select count(*) from user join like on id = id1 where age > 100
+select count(*) from user join like on id = id2 where age > 100
 .exit

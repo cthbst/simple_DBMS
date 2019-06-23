@@ -33,6 +33,7 @@ void table_state_handler(Command_t &cmd, Iter &it) {
         cmd.sel_args.join = *(it+5);
         it += 6;
     }
+    if (it == cmd.args.end()) return;
     
     if (*it == "where") {
         where_state_handler(cmd, ++it);

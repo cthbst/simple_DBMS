@@ -185,7 +185,6 @@ int handle_select_cmd(Table_t &table, Command_t &cmd) {
 }
 
 void print_join(Table_t &table, const std::vector<size_t>& idxList, Command_t &cmd) {
-    if (idxList.size() == 0) return;
     if ( cmd.sel_args.limit == 0 ) return;
     if ( cmd.sel_args.offset > 0 ) return;
 
