@@ -5,7 +5,6 @@
 
 Table_t::Table_t(){
     users.reserve(INIT_TABLE_SIZE);
-    cnt_like.resize(2);
 }
 
 size_t Table_t::size(){

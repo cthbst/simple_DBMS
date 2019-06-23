@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include "User.h"
 #include <vector>
+#include <array>
 #include <unordered_set>
 #include <unordered_map>
 
@@ -15,7 +16,7 @@ struct Table_t {
     std::unordered_set<int> primary_keys;
     std::unordered_map<int,int> like;
     std::vector<std::pair<int,int>> like_pairs;
-    std::vector< std::unordered_map<int,int> > cnt_like;
+    std::array< std::unordered_map<int,int>, 2> cnt_like;
     
     Table_t ();
     size_t size();

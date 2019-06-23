@@ -142,6 +142,8 @@ int handle_insert_cmd(Table_t &table, Command_t &cmd) {
         int v = stoi( cmd.args[4] );
         table.like[u] = v;
         table.like_pairs.push_back({u,v});
+        table.cnt_like[0][u]++;
+        table.cnt_like[1][v]++;
         return 1;
     }
 }
@@ -187,14 +189,6 @@ int handle_select_cmd(Table_t &table, Command_t &cmd) {
 void print_join(Table_t &table, const std::vector<size_t>& idxList, Command_t &cmd) {
     if ( cmd.sel_args.limit == 0 ) return;
     if ( cmd.sel_args.offset > 0 ) return;
-
-    // std::unordered_map<int,int> cnt_like[2];
-    table.cnt_like[0].clear();
-    talbe.cnt_like[1].clear();
-    for (auto &x : table.like_pairs) {
-        table.cnt_like[0][ x.first ]++;
-        table.cnt_like[1][ x.second ]++; 
-    }
     
     int idx = (cmd.sel_args.join == "id1"?0:1);
     int ans = 0;
